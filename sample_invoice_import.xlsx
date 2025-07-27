@@ -1,0 +1,50 @@
+# Sample Excel File Structure for Invoice Import
+
+## File Format
+- **Format:** `.xlsx` or `.xls`
+- **Encoding:** UTF-8
+- **Headers:** First row contains column headers
+
+## Required Columns (in order)
+
+| Column | Header | Description | Example | Required |
+|--------|--------|-------------|---------|----------|
+| A | client_name | Client's full name | "Test Company Ltd" | ✅ |
+| B | invoice_number | Unique invoice number | "INV-2025-001" | ✅ |
+| C | invoice_date | Invoice date (YYYY-MM-DD) | "2025-07-27" | ✅ |
+| D | total_without_tax | Subtotal without tax | 100.00 | ✅ |
+| E | total_tax | Tax amount | 20.00 | ✅ |
+| F | total_with_tax | Total with tax | 120.00 | ✅ |
+| G | item_description | Item description | "Test Item" | ✅ |
+| H | item_quantity | Quantity | 1 | ✅ |
+| I | item_unit | Unit of measurement | "piece" | ✅ |
+| J | item_price | Unit price | 100.00 | ✅ |
+| K | item_tax | Item tax amount | 20.00 | ✅ |
+| L | item_total | Item total | 120.00 | ✅ |
+
+## Sample Data
+
+```
+client_name,invoice_number,invoice_date,total_without_tax,total_tax,total_with_tax,item_description,item_quantity,item_unit,item_price,item_tax,item_total
+"Test Company Ltd","INV-2025-001","2025-07-27",100.00,20.00,120.00,"Test Item",1,"piece",100.00,20.00,120.00
+"Another Client","INV-2025-002","2025-07-27",200.00,40.00,240.00,"Another Item",2,"pieces",100.00,40.00,240.00
+```
+
+## Notes
+- **Date Format:** Use YYYY-MM-DD format
+- **Numbers:** Use decimal point (not comma)
+- **Text:** Enclose in quotes if contains commas
+- **Tax Rate:** System uses 20% Albanian VAT rate
+- **Currency:** All amounts in Albanian Lek (ALL)
+
+## Validation Rules
+- All required fields must be present
+- Invoice numbers must be unique
+- Dates must be valid
+- Numbers must be positive
+- Tax calculations must be accurate
+
+## Error Handling
+- Missing required fields will cause import to fail
+- Invalid data will be logged with row numbers
+- Successful imports will create clients and invoices automatically 

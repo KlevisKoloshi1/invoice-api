@@ -1,0 +1,705 @@
+{
+	"info": {
+		"_postman_id": "invoice-api-collection",
+		"name": "Invoice API with Fiscalization",
+		"description": "Complete API collection for testing the Laravel Invoice API with Albanian fiscalization integration",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"login"
+							]
+						},
+						"description": "Login to get authentication token"
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication endpoints"
+		},
+		{
+			"name": "Clients",
+			"item": [
+				{
+					"name": "Get All Clients",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/clients?per_page=15",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"clients"
+							],
+							"query": [
+								{
+									"key": "per_page",
+									"value": "15"
+								}
+							]
+						},
+						"description": "Get paginated list of clients"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Client",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Test Client for Fiscalization\",\n  \"email\": \"test@example.com\",\n  \"tax_id\": \"SKA\",\n  \"address\": \"Test Address\",\n  \"phone\": \"123456789\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/clients",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"clients"
+							]
+						},
+						"description": "Create a new client"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Client by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/clients/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"clients",
+								"1"
+							]
+						},
+						"description": "Get a specific client by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Client",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Client Name\",\n  \"email\": \"updated@example.com\",\n  \"tax_id\": \"UPDATED123\",\n  \"address\": \"Updated Address\",\n  \"phone\": \"987654321\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/clients/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"clients",
+								"1"
+							]
+						},
+						"description": "Update an existing client"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Client",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/clients/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"clients",
+								"1"
+							]
+						},
+						"description": "Delete a client"
+					},
+					"response": []
+				}
+			],
+			"description": "Client management endpoints"
+		},
+		{
+			"name": "Invoices",
+			"item": [
+				{
+					"name": "Get All Invoices",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/invoices?per_page=15",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"invoices"
+							],
+							"query": [
+								{
+									"key": "per_page",
+									"value": "15"
+								}
+							]
+						},
+						"description": "Get paginated list of invoices"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Invoice",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"client_id\": 1,\n  \"invoice_number\": \"INV-TEST-001\",\n  \"invoice_date\": \"2025-07-27 20:00:00\",\n  \"total_without_tax\": 100.00,\n  \"total_tax\": 20.00,\n  \"total_with_tax\": 120.00,\n  \"items\": [\n    {\n      \"description\": \"Test Item for Fiscalization\",\n      \"quantity\": 1,\n      \"unit\": \"piece\",\n      \"price\": 100.00,\n      \"tax\": 20.00,\n      \"total\": 120.00\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/invoices",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"invoices"
+							]
+						},
+						"description": "Create a new invoice with items"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Invoice by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/invoices/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"invoices",
+								"1"
+							]
+						},
+						"description": "Get a specific invoice by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Invoice",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"invoice_number\": \"INV-UPDATED-001\",\n  \"total_without_tax\": 150.00,\n  \"total_tax\": 30.00,\n  \"total_with_tax\": 180.00\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/invoices/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"invoices",
+								"1"
+							]
+						},
+						"description": "Update an existing invoice"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Invoice",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/invoices/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"invoices",
+								"1"
+							]
+						},
+						"description": "Delete an invoice"
+					},
+					"response": []
+				},
+				{
+					"name": "Fiscalize Invoice",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/invoices/1/fiscalize",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"invoices",
+								"1",
+								"fiscalize"
+							]
+						},
+						"description": "Fiscalize an invoice (send to Albanian tax authority)"
+					},
+					"response": []
+				}
+			],
+			"description": "Invoice management endpoints including fiscalization"
+		},
+		{
+			"name": "Imports",
+			"item": [
+				{
+					"name": "Get All Imports",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/imports?per_page=15",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"imports"
+							],
+							"query": [
+								{
+									"key": "per_page",
+									"value": "15"
+								}
+							]
+						},
+						"description": "Get paginated list of imports"
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Excel File",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/imports",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"imports"
+							]
+						},
+						"description": "Upload Excel file to import invoices"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Import by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/imports/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"imports",
+								"1"
+							]
+						},
+						"description": "Get a specific import by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Import",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"completed\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/imports/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"imports",
+								"1"
+							]
+						},
+						"description": "Update an import status"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Import",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/imports/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"imports",
+								"1"
+							]
+						},
+						"description": "Delete an import"
+					},
+					"response": []
+				},
+				{
+					"name": "Fiscalize Import (Bulk Excel Fiscalization)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/imports/1/fiscalize",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"imports",
+								"1",
+								"fiscalize"
+							]
+						},
+						"description": "Fiscalize all invoices from an Excel import in bulk"
+					},
+					"response": []
+				}
+			],
+			"description": "Import management endpoints for Excel file uploads"
+		},
+		{
+			"name": "Fiscalization Management",
+			"item": [
+				{
+					"name": "Get Fiscalization Customers",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/fiscalization/customers",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"fiscalization",
+								"customers"
+							]
+						},
+						"description": "Get existing customers from fiscalization system"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Fiscalization Customer",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"New Customer\",\n  \"tax_id\": \"123456789\",\n  \"address\": \"Customer Address\",\n  \"phone\": \"1234567890\",\n  \"email\": \"customer@email.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/fiscalization/customers",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"fiscalization",
+								"customers"
+							]
+						},
+						"description": "Create a new customer in fiscalization system"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Fiscalization Items",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/fiscalization/items",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"fiscalization",
+								"items"
+							]
+						},
+						"description": "Get existing items from fiscalization system"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Fiscalization Item",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"item_code\": \"ITEM001\",\n  \"item_name\": \"Test Item\",\n  \"price\": 100.00\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/fiscalization/items",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"fiscalization",
+								"items"
+							]
+						},
+						"description": "Create a new item in fiscalization system"
+					},
+					"response": []
+				}
+			],
+			"description": "Fiscalization system management endpoints"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		}
+	]
+} 
