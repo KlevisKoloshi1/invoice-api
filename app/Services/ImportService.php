@@ -25,8 +25,13 @@ class ImportService implements ImportServiceInterface
 
     public function importFromExcel(UploadedFile $file, int $userId): Import
     {
-        // Validate and store file
-        $path = $file->store('imports');
+        // Validate file type
+        if (!in_array($file->getClientOriginalExtension(), ['xlsx', 'xls'])) {
+            throw new \Exception("Invalid file type. Only .xlsx and .xls files are allowed.");
+        }
+
+        // Store file using Laravel's storage system
+        $path = $file->store('imports', 'local');
         $import = Import::create([
             'file_path' => $path,
             'status' => 'pending',
@@ -34,49 +39,166 @@ class ImportService implements ImportServiceInterface
         ]);
 
         try {
-            $rows = Excel::toArray([], storage_path('app/' . $path))[0];
+            // Get the full path using Laravel's storage system
+            $fullPath = Storage::disk('local')->path($path);
+            
+            // Check if file exists before processing
+            if (!file_exists($fullPath)) {
+                throw new \Exception("File [{$fullPath}] does not exist and can therefore not be imported. Please check file permissions and storage configuration.");
+            }
+            
+            // Log the file path for debugging
+            \Log::info("Processing Excel file: {$fullPath}");
+            
+            $rows = Excel::toArray([], $fullPath)[0];
+            
+            if (empty($rows) || count($rows) < 2) {
+                throw new \Exception("Excel file is empty or contains no data rows.");
+            }
+            
+            // Validate headers
+            $expectedHeaders = [
+                'client_name', 'invoice_number', 'invoice_date', 'total_without_tax', 
+                'total_tax', 'total_with_tax', 'item_description', 'item_quantity', 
+                'item_unit', 'item_price', 'item_tax', 'item_total'
+            ];
+            
+            $headers = array_map('strtolower', array_map('trim', $rows[0]));
+            if (count($headers) < 12) {
+                throw new \Exception("Invalid Excel format. Expected 12 columns, found " . count($headers));
+            }
+            
             DB::beginTransaction();
+            $processedCount = 0;
+            $errors = [];
+            
             foreach ($rows as $index => $row) {
                 // Skip header row
                 if ($index === 0) continue;
-                // Validate required fields
-                if (empty($row[0]) || empty($row[1]) || empty($row[2])) {
-                    throw new \Exception("Missing required fields at row " . ($index + 1));
+                
+                try {
+                    // Validate required fields
+                    if (empty($row[0]) || empty($row[1]) || empty($row[2])) {
+                        throw new \Exception("Missing required fields at row " . ($index + 1));
+                    }
+                    
+                    // Validate invoice number uniqueness
+                    if (Invoice::where('invoice_number', $row[1])->exists()) {
+                        throw new \Exception("Invoice number '{$row[1]}' already exists at row " . ($index + 1));
+                    }
+                    
+                    // Convert Excel date to proper format
+                    $invoiceDate = $this->convertExcelDate($row[2]);
+                    
+                    // Validate date format
+                    if (!$this->isValidDate($invoiceDate)) {
+                        throw new \Exception("Invalid date format at row " . ($index + 1) . ": {$row[2]}");
+                    }
+                    
+                    // Validate numeric fields
+                    $numericFields = [3, 4, 5, 7, 9, 10, 11]; // total_without_tax, total_tax, total_with_tax, item_quantity, item_price, item_tax, item_total
+                    foreach ($numericFields as $fieldIndex) {
+                        if (isset($row[$fieldIndex]) && !is_numeric($row[$fieldIndex])) {
+                            throw new \Exception("Invalid numeric value at row " . ($index + 1) . ", column " . ($fieldIndex + 1));
+                        }
+                    }
+                    
+                    // Example: [client_name, invoice_number, invoice_date, total_without_tax, total_tax, total_with_tax, item_description, item_quantity, item_unit, item_price, item_tax, item_total]
+                    $client = Client::firstOrCreate([
+                        'name' => trim($row[0]),
+                    ]);
+                    
+                    $invoice = Invoice::create([
+                        'client_id' => $client->id,
+                        'invoice_number' => trim($row[1]),
+                        'invoice_date' => $invoiceDate,
+                        'total_without_tax' => (float)($row[3] ?? 0),
+                        'total_tax' => (float)($row[4] ?? 0),
+                        'total_with_tax' => (float)($row[5] ?? 0),
+                        'created_by' => $userId,
+                        'import_id' => $import->id,
+                    ]);
+                    
+                    InvoiceItem::create([
+                        'invoice_id' => $invoice->id,
+                        'description' => trim($row[6] ?? ''),
+                        'quantity' => (int)($row[7] ?? 1),
+                        'unit' => trim($row[8] ?? ''),
+                        'price' => (float)($row[9] ?? 0),
+                        'tax' => (float)($row[10] ?? 0),
+                        'total' => (float)($row[11] ?? 0),
+                    ]);
+                    
+                    $processedCount++;
+                    
+                } catch (\Exception $rowError) {
+                    $errors[] = "Row " . ($index + 1) . ": " . $rowError->getMessage();
                 }
-                // Example: [client_name, invoice_number, invoice_date, total_without_tax, total_tax, total_with_tax, item_description, item_quantity, item_unit, item_price, item_tax, item_total]
-                $client = Client::firstOrCreate([
-                    'name' => $row[0],
-                ]);
-                $invoice = Invoice::create([
-                    'client_id' => $client->id,
-                    'invoice_number' => $row[1],
-                    'invoice_date' => $row[2],
-                    'total_without_tax' => $row[3] ?? 0,
-                    'total_tax' => $row[4] ?? 0,
-                    'total_with_tax' => $row[5] ?? 0,
-                    'created_by' => $userId,
-                    'import_id' => $import->id,
-                ]);
-                InvoiceItem::create([
-                    'invoice_id' => $invoice->id,
-                    'description' => $row[6] ?? '',
-                    'quantity' => $row[7] ?? 1,
-                    'unit' => $row[8] ?? '',
-                    'price' => $row[9] ?? 0,
-                    'tax' => $row[10] ?? 0,
-                    'total' => $row[11] ?? 0,
-                ]);
             }
+            
+            // If there are errors, throw exception with all errors
+            if (!empty($errors)) {
+                throw new \Exception("Import completed with errors:\n" . implode("\n", $errors));
+            }
+            
             $import->status = 'completed';
             $import->save();
             DB::commit();
+            
+            \Log::info("Import completed successfully. Import ID: {$import->id}, Processed: {$processedCount} invoices");
+            
         } catch (\Exception $e) {
             $import->status = 'failed';
             $import->error_message = $e->getMessage();
             $import->save();
             DB::rollBack();
+            
+            \Log::error("Import failed. Import ID: {$import->id}, Error: " . $e->getMessage());
         }
         return $import;
+    }
+
+    /**
+     * Convert Excel date serial number to proper date format
+     */
+    private function convertExcelDate($excelDate)
+    {
+        // If it's already a string date with time, return as is
+        if (is_string($excelDate) && preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $excelDate)) {
+            return $excelDate;
+        }
+        
+        // If it's already a string date without time, add current time
+        if (is_string($excelDate) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $excelDate)) {
+            return $excelDate . ' ' . date('H:i:s');
+        }
+        
+        // If it's a numeric Excel date
+        if (is_numeric($excelDate)) {
+            // Excel dates are days since January 1, 1900
+            // Convert to Unix timestamp (seconds since January 1, 1970)
+            $unixTimestamp = ($excelDate - 25569) * 86400;
+            
+            // Format as Y-m-d H:i:s (preserve time)
+            return date('Y-m-d H:i:s', $unixTimestamp);
+        }
+        
+        // If it's already a Carbon instance or DateTime
+        if ($excelDate instanceof \Carbon\Carbon || $excelDate instanceof \DateTime) {
+            return $excelDate->format('Y-m-d H:i:s');
+        }
+        
+        // Default fallback - use current date and time
+        return date('Y-m-d H:i:s');
+    }
+
+    /**
+     * Validate if a date string is in correct format
+     */
+    private function isValidDate($dateString)
+    {
+        $date = \DateTime::createFromFormat('Y-m-d H:i:s', $dateString);
+        return $date && $date->format('Y-m-d H:i:s') === $dateString;
     }
 
     public function fiscalizeImport(int $importId): array
